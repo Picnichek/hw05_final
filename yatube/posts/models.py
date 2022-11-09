@@ -42,9 +42,7 @@ class Post(models.Model):
         help_text='Группа, к которой будет' ' относиться пост',
     )
     image = models.ImageField(
-        'Картинка',
-        upload_to='posts/',
-        blank=True
+        'Картинка', upload_to='posts/', blank=True, null=True
     )
 
     def __str__(self):
@@ -61,7 +59,7 @@ class Comment(models.Model):
         Post,
         on_delete=models.CASCADE,
         related_name='comments',
-        verbose_name='Комментарий'
+        verbose_name='Комментарий',
     )
     author = models.ForeignKey(
         User,
@@ -88,11 +86,21 @@ class Comment(models.Model):
 
 class Follow(models.Model):
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='follower'
+        User, on_delete=models.CASCADE, related_name='follower'
     )
-    author = models.ForeignKey(User, on_delete=models.CASCADE,
-                               related_name='following')
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='following'
+    )
+
+    class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
+        constraints = [
+            models.UniqueConstraint(
+                name='couple_user_and_author_unique',
+                fields=['user', 'author'],
+            ),
+        ]
 
     def __str__(self):
-        return f'{self.text[:15]}'
+        return f'{self.author[:15]}'

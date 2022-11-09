@@ -1,9 +1,8 @@
 import shutil
 import tempfile
-
-from django.conf import settings
 from http import HTTPStatus
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
@@ -50,16 +49,17 @@ class PostFormTests(TestCase):
         form_data = {
             'text': 'комментарий',
         }
-        response = self.authorized_client.post(reverse(
-            'posts:add_comment', kwargs={"post_id": self.post.id}),
+        response = self.authorized_client.post(
+            reverse('posts:add_comment', kwargs={"post_id": self.post.id}),
             data=form_data,
-            follow=True
+            follow=True,
         )
         comment = Comment.objects.first()
         self.assertEqual(Comment.objects.count(), comment_count + 1)
         self.assertRedirects(
-            response, reverse(
-                'posts:post_detail', kwargs={'post_id': self.post.id}))
+            response,
+            reverse('posts:post_detail', kwargs={'post_id': self.post.id}),
+        )
         self.assertEqual(comment.text, 'комментарий')
 
     def test_create_comment_for_guest_client(self):
@@ -69,7 +69,9 @@ class PostFormTests(TestCase):
         }
         self.guest_client.post(
             reverse('posts:add_comment', kwargs={"post_id": self.post.id}),
-            data=form_data, follow=True)
+            data=form_data,
+            follow=True,
+        )
         comment = Comment.objects.first()
         self.assertEqual(Comment.objects.count(), comment_count)
         self.assertIsNone(comment)
@@ -95,15 +97,11 @@ class PostFormTests(TestCase):
             'image': uploaded,
         }
         response = self.authorized_client.post(
-            reverse('posts:post_create'),
-            data=form_data,
-            follow=True
+            reverse('posts:post_create'), data=form_data, follow=True
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertRedirects(
-            response, reverse(
-                'posts:profile',
-                kwargs={'username': self.user})
+            response, reverse('posts:profile', kwargs={'username': self.user})
         )
         post = Post.objects.first()
         self.assertEqual(post.author, self.user)
@@ -181,9 +179,7 @@ class PostFormTests(TestCase):
         login_url = reverse('users:login')
         edit_url = reverse('posts:post_edit', args=({self.post.id}))
         redirect_url = f'{login_url}?next={edit_url}'
-        self.assertRedirects(
-            response, redirect_url
-        )
+        self.assertRedirects(response, redirect_url)
         self.assertEqual(Post.objects.count(), posts_count)
         self.assertEqual(post.text, self.post.text)
         self.assertIsNone(post.group)

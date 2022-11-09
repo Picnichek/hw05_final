@@ -1,8 +1,10 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import cache_page
+
 from .forms import CommentForm, PostForm
-from .models import Follow, Group, Post, User, Comment
+from .models import Follow, Group, Post, User
 
 
 def get_page(request, queryset):
@@ -11,15 +13,12 @@ def get_page(request, queryset):
     return paginator.get_page(page_number)
 
 
-# @cache_page(20)
+@cache_page(20)
 def index(request):
     posts = Post.objects.select_related('group', 'author')
     template = 'posts/index.html'
     page_obj = get_page(request, posts)
-    context = {
-        'page_obj': page_obj,
-        'posts': posts
-    }
+    context = {'page_obj': page_obj, 'posts': posts}
     return render(request, template, context)
 
 
@@ -28,11 +27,7 @@ def group_posts(request, slug):
     posts = group.posts.select_related('group', 'author')
     template = 'posts/group_list.html'
     page_obj = get_page(request, posts)
-    context = {
-        'group': group,
-        'page_obj': page_obj,
-        'posts': posts
-    }
+    context = {'group': group, 'page_obj': page_obj, 'posts': posts}
     return render(request, template, context)
 
 
@@ -41,7 +36,12 @@ def profile(request, username):
     posts = author.posts.select_related('group', 'author')
     template = 'posts/profile.html'
     page_obj = get_page(request, posts)
-    following = author.following.exists()
+    if request.user.is_authenticated:
+        following = Follow.objects.filter(
+            user=request.user, author=author
+        ).exists()
+    else:
+        following = False
     context = {
         'posts': posts,
         'author': author,
@@ -54,7 +54,8 @@ def profile(request, username):
 def post_detail(request, post_id):
     form = CommentForm(request.POST or None)
     concrete_post = get_object_or_404(Post, pk=post_id)
-    comments = Comment.objects.filter(post=concrete_post)
+    comments = concrete_post.comments.select_related('post')
+
     template = 'posts/post_detail.html'
     context = {
         'concrete_post': concrete_post,
@@ -111,28 +112,25 @@ def add_comment(request, post_id):
 @login_required
 def follow_index(request):
     template = 'posts/follow.html'
-    follower = Follow.objects.filter(user=request.user).values_list(
-        "author_id", flat=True
-    )
-    posts = Post.objects.filter(author_id__in=follower)
+    posts = Post.objects.filter(author__following__user=request.user)
     page_obj = get_page(request, posts)
-    context = {
-        'page_obj': page_obj,
-        'title': 'Избранные записи'
-    }
+    context = {'page_obj': page_obj, 'title': 'Избранные записи'}
     return render(request, template, context)
 
 
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    if author != request.user:
-        Follow.objects.get_or_create(user=request.user, author=author)
+    check_follower = Follow.objects.filter(user=request.user, author=author)
+    if author != request.user and not check_follower.exists():
+        Follow.objects.create(user=request.user, author=author)
     return redirect('posts:follow_index')
 
 
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
-    Follow.objects.get(user=request.user, author=author).delete()
+    check_follower = Follow.objects.filter(user=request.user, author=author)
+    if check_follower.exists():
+        check_follower.delete()
     return redirect('posts:follow_index')

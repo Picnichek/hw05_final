@@ -39,15 +39,17 @@ class PostModelTest(TestCase):
         for value, expected in verbose_names.items():
             with self.subTest(value=value):
                 self.assertEqual(
-                    self.post._meta.get_field(value).verbose_name, expected)
+                    self.post._meta.get_field(value).verbose_name, expected
+                )
         help_texts = {
             'text': 'Введите текст поста',
-            'group': 'Группа, к которой будет относиться пост'
+            'group': 'Группа, к которой будет относиться пост',
         }
         for value, expected in help_texts.items():
             with self.subTest(value=value):
                 self.assertEqual(
-                    self.post._meta.get_field(value).help_text, expected)
+                    self.post._meta.get_field(value).help_text, expected
+                )
 
     def test_group_verbose_names(self):
         verbose_names = {
@@ -58,4 +60,5 @@ class PostModelTest(TestCase):
         for value, expected in verbose_names.items():
             with self.subTest(value=value):
                 self.assertEqual(
-                    self.group._meta.get_field(value).verbose_name, expected)
+                    self.group._meta.get_field(value).verbose_name, expected
+                )

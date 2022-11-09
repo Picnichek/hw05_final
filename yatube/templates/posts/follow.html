@@ -3,8 +3,6 @@
   {{title}}
 {% endblock %}
 {% block content %}
-{% load cache %}
-{% cache 20 index_page %}
   <div class="container py-5">
     <h1>Последние обновления на сайте</h1>
     {% for post in page_obj %}
@@ -12,5 +10,4 @@
     {% endfor %}
   </div>
   {% include 'includes/paginator.html' %}
-{% endcache %}
 {% endblock %}
