@@ -36,12 +36,9 @@ def profile(request, username):
     posts = author.posts.select_related('group', 'author')
     template = 'posts/profile.html'
     page_obj = get_page(request, posts)
-    if request.user.is_authenticated:
-        following = Follow.objects.filter(
-            user=request.user, author=author
-        ).exists()
-    else:
-        following = False
+    following = request.user.is_authenticated and Follow.objects.filter(
+        user=request.user, author=author
+    ).exists()
     context = {
         'posts': posts,
         'author': author,
@@ -52,7 +49,7 @@ def profile(request, username):
 
 
 def post_detail(request, post_id):
-    form = CommentForm(request.POST or None)
+    form = CommentForm(request.GET)
     concrete_post = get_object_or_404(Post, pk=post_id)
     comments = concrete_post.comments.select_related('post')
 
